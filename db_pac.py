@@ -237,7 +237,7 @@ def chemo():    # create chemolist (pop up new window)
         try: 
             wb = openpyxl.load_workbook('chemolisty.xlsx')
             ws = wb[treatment]
-            ws['A1'].value = record[1]
+            ws['A1'].value = record[1]    # update cell values with database data
             ws['A2'].value = record[2]
             ws['A3'].value = record[0]
             ws['A4'].value = record[3]
@@ -250,11 +250,17 @@ def chemo():    # create chemolist (pop up new window)
             if record[8] == 'ne':
                 ws['G6'].value = ''
             chemo_file = f'{record[1]}_{record[2]}_{treatment.upper()}.xlsx'
+
+            for sheet in range(len(wb.sheetnames)):    # focus on the working sheet
+                if wb.sheetnames[sheet] == treatment:
+                    break
+            wb.active = sheet
+
             wb.save(chemo_file)
             tk.messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {chemo_file}')
             if tk.messagebox.askyesno(title='Dotaz', message=f'Chceš chemolist otevřít?') == True:
                 path_file = Path(chemo_file).resolve()
-                os.system(f'start excel.exe "{path_file}"')
+                os.system(f'start excel.exe "{path_file}"')    # open excel file
             chemo_window.destroy()
         except TypeError:
                 tk.messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
