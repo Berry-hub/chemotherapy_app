@@ -1,7 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, filedialog
 import sqlite3 as db
 import openpyxl
+import os
+from pathlib import Path
+
 
 # create new database
 conn = db.connect('pacienti.db')
@@ -246,8 +249,12 @@ def chemo():    # create chemolist (pop up new window)
                 ws['G6'].value = 'PORT'
             if record[8] == 'ne':
                 ws['G6'].value = ''
-            wb.save(f'{record[1]}_{record[2]}_{treatment}.xlsx')
-            tk.messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {record[1]}_{record[2]}_{treatment.upper()}')
+            chemo_file = f'{record[1]}_{record[2]}_{treatment.upper()}.xlsx'
+            wb.save(chemo_file)
+            tk.messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {chemo_file}')
+            if tk.messagebox.askyesno(title='Dotaz', message=f'Chceš chemolist otevřít?') == True:
+                path_file = Path(chemo_file).resolve()
+                os.system(f'start excel.exe "{path_file}"')
             chemo_window.destroy()
         except TypeError:
                 tk.messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
