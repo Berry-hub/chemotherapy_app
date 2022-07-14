@@ -4,6 +4,10 @@ import sqlite3 as db
 import openpyxl
 import os
 from pathlib import Path
+import csv
+import pandas as pd
+import xlsxwriter
+
 
 
 # create new database
@@ -283,6 +287,18 @@ def chemo():    # create chemolist (pop up new window)
     tk.Label(chemo_window,text='Vyber požadovaný režim chemoterapie', font='Arial 16 bold', background='light blue').grid(row=0, column=0, columnspan=3, padx=10)
 
 
+def show_data():    # save all patients from database to excel file
+    conn = db.connect('pacienti.db')
+    with pd.ExcelWriter("vsichni_pacienti.xlsx", engine="xlsxwriter") as writer:
+        try:
+            df = pd.read_sql('SELECT * FROM pacienti ORDER BY rodne_cislo ASC', conn)
+            df.to_excel(writer, sheet_name = "pacienti", header = True, index = False)
+            path_file = Path('vsichni_pacienti.xlsx').resolve()
+            os.system(f'start excel.exe "{path_file}"')
+        except:
+            print("There is an error")
+
+
 # labels and entries in main window
 id = tk.Label(add_frame, text='rodné číslo', font='Arial 11', background='light blue')
 id.grid(row=1, column=0)
@@ -364,5 +380,7 @@ edit_btn.grid(row=12, column=0, padx=5, pady=5)
 chemo_btn = tk.Button(window, width=12, text='CHEMOLISTY', font='Arial 11', fg='white', background='black', command=chemo)
 chemo_btn.grid(row=12, column=1, padx=5, pady=5)
 
+show_data_btn  = tk.Button(window, width=36, text='všichni pacienti - zobrazit v exceli', font='Arial 11', fg='black', background='wheat', command=show_data)
+show_data_btn.grid(row=13, column=0, columnspan=3, padx=5, pady=150)
 
 window.mainloop()
