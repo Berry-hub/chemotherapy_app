@@ -1,12 +1,12 @@
 import tkinter as tk
-from tkinter import messagebox, ttk, filedialog
+from tkinter import messagebox
 import sqlite3 as db
 import openpyxl
 import os
 from pathlib import Path
-import csv
 import pandas as pd
 import xlsxwriter
+from PIL import ImageTk
 
 
 
@@ -32,8 +32,13 @@ conn.close()
 # create tkinter window
 window = tk.Tk()
 window.title('můj malý Štajner')
-window.geometry('420x680')
+window.geometry('420x725')
 window.config(background='light blue')
+
+# bg = ImageTk.PhotoImage(file = "chemo.png")
+bg = ImageTk.PhotoImage(file = "doktor.jpg")
+background_label = tk.Label(window, image=bg)
+background_label.grid(row=13, column=0, rowspan=1, columnspan=3, pady=5)
 
 title = tk.Label(window, text='Databáza pacientů', font='Arial 16 bold', background='light blue')
 title.grid(row=0, column=0, columnspan=3, ipadx=20, ipady=10)
@@ -48,9 +53,9 @@ def add():    # add patient to the database     # nutno poriesit NOT NULL entry!
     cur = conn.cursor()
     try:
         cur.execute('INSERT INTO pacienti (rodne_cislo, prijmeni, jmeno, pojistovna, adresa, diagnoza, vyska, vaha, port) VALUES(?,?,?,?,?,?,?,?,?)', (fill_id.get(), fill_surname.get(), fill_name.get(), fill_insurance.get(),fill_address.get(), fill_diagnosis.get(), fill_height.get(), fill_weight.get(), fill_port.get()))
-        tk.messagebox.showinfo(title='oznameni', message='pacient uspesne pridan do databazy')
+        messagebox.showinfo(title='oznameni', message='pacient uspesne pridan do databazy')
     except db.IntegrityError:
-        tk.messagebox.showerror(title='Upozornění', message='Pacient s uvedeným rodným číslem již je v databáze!')
+        messagebox.showerror(title='Upozornění', message='Pacient s uvedeným rodným číslem již je v databáze!')
     cur.close()
     conn.commit()
     conn.close()
@@ -77,7 +82,7 @@ def find():    # look for patient in the database, result pops up in a new windo
     record = cur.fetchone()
     note_list = ['rodné číslo', 'příjmení', 'jméno', 'pojišťovna', 'adresa', 'diagnóza', 'výška', 'váha', 'port']
     if record is None:
-        tk.messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')  
+        messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')  
         find_window.destroy()
     else:
         for index,item in enumerate(note_list):
@@ -98,9 +103,9 @@ def delete():    # delete patient from the database
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
     id_select = fill_search.get()
-    if tk.messagebox.askyesno(title='Varování', message='Opravdu chceš vymazat pacienta z databázy?') == True:
+    if messagebox.askyesno(title='Varování', message='Opravdu chceš vymazat pacienta z databázy?') == True:
         cur.execute('DELETE FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-        tk.messagebox.showinfo(title='Info', message='Pacient vymazán!')  
+        messagebox.showinfo(title='Info', message='Pacient vymazán!')  
     conn.commit()
     conn.close()
     fill_search.delete(0, 'end')
@@ -132,7 +137,7 @@ def save():    # confirm data update and save to the database
                 'port' : fill_port_edit.get(),
                 'rodne_cislo' : id_select
             })
-        tk.messagebox.showinfo(title='Info', message='Změny uloženy!') 
+        messagebox.showinfo(title='Info', message='Změny uloženy!') 
     conn.commit()
     conn.close()
     edit_window.destroy()
@@ -209,7 +214,7 @@ def edit():    # edit patient's data
     cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
     record = cur.fetchone()
     if record is None:
-        tk.messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')
+        messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')
         edit_window.destroy()
     else:
         fill_surname_edit.insert(0, record[1])
@@ -261,13 +266,13 @@ def chemo():    # create chemolist (pop up new window)
             wb.active = sheet
 
             wb.save(chemo_file)
-            tk.messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {chemo_file}')
-            if tk.messagebox.askyesno(title='Dotaz', message=f'Chceš chemolist otevřít?') == True:
+            messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {chemo_file}')
+            if messagebox.askyesno(title='Dotaz', message=f'Chceš chemolist otevřít?') == True:
                 path_file = Path(chemo_file).resolve()
                 os.system(f'start excel.exe "{path_file}"')    # open excel file
             chemo_window.destroy()
         except TypeError:
-                tk.messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
+                messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
                 chemo_window.destroy()
         conn.commit()
         conn.close()   
@@ -380,7 +385,7 @@ edit_btn.grid(row=12, column=0, padx=5, pady=5)
 chemo_btn = tk.Button(window, width=12, text='CHEMOLISTY', font='Arial 11', fg='white', background='black', command=chemo)
 chemo_btn.grid(row=12, column=1, padx=5, pady=5)
 
-show_data_btn  = tk.Button(window, width=36, text='všichni pacienti - zobrazit v exceli', font='Arial 11', fg='black', background='wheat', command=show_data)
-show_data_btn.grid(row=13, column=0, columnspan=3, padx=5, pady=150)
+show_data_btn  = tk.Button(window, width=36, text='všichni pacienti - uložit do excelu a zobrazit', font='Arial 11', fg='black', background='wheat', command=show_data)
+show_data_btn.grid(row=14, column=0, columnspan=3, padx=5, pady=5)
 
 window.mainloop()
