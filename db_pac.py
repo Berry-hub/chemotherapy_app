@@ -1,3 +1,4 @@
+from msilib.schema import Icon
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3 as db
@@ -31,12 +32,12 @@ conn.close()
 
 # create tkinter window
 window = tk.Tk()
-window.title('můj malý Štajner')
+window.title('Pacienti + chemoterapie')
 window.geometry('420x725')
 window.config(background='light blue')
+window.iconbitmap('icon.ico')
 
-# bg = ImageTk.PhotoImage(file = "chemo.png")
-bg = ImageTk.PhotoImage(file = "doktor.jpg")
+bg = ImageTk.PhotoImage(file = "main_window_img.jpg")
 background_label = tk.Label(window, image=bg)
 background_label.grid(row=13, column=0, rowspan=1, columnspan=3, pady=5)
 
@@ -70,9 +71,9 @@ def add():    # add patient to the database     # nutno poriesit NOT NULL entry!
     fill_port.delete(0, 'end')
 
 def find():    # look for patient in the database, result pops up in a new window
-    find_window = tk.Tk()
+    find_window = tk.Toplevel()
     find_window.title('pacient')
-    find_window.geometry('420x680')
+    find_window.geometry('420x710')
     find_window.config(background='light blue')
 
     conn = db.connect('pacienti.db')
@@ -94,12 +95,17 @@ def find():    # look for patient in the database, result pops up in a new windo
         for index, rec in enumerate(record):
             find_label = tk.Label(find_window, width=36, text=rec, anchor='w', font='Arial 11', background='light blue')
             find_label.grid(row=index, column=2)
+        find_window_bg = tk.PhotoImage(file="find_window_img.png")
+        find_window_label = tk.Label(find_window, image=find_window_bg)
+        find_window_label.grid(row=11, column=0, columnspan=3, pady=5)
+        find_window_label.image = find_window_bg
 
     conn.commit()
     conn.close()
     return id_select
 
 def delete():    # delete patient from the database
+    # nutno upravit - 'vymaze' i neexistujiciho pacienta!
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
     id_select = fill_search.get()
@@ -144,10 +150,15 @@ def save():    # confirm data update and save to the database
 
 def edit():    # edit patient's data
     global edit_window
-    edit_window = tk.Tk()
+    edit_window = tk.Toplevel()
     edit_window.title('Upravit údaje pacienta')
-    edit_window.geometry('420x680')
+    edit_window.geometry('390x680')
     edit_window.config(background='light blue')
+
+    edit_window_bg = tk.PhotoImage(file="edit_window_img.png")
+    edit_window_label = tk.Label(edit_window, image=edit_window_bg)
+    edit_window_label.grid(row=11, column=0, columnspan=2, pady=5, padx=30)
+    edit_window_label.image = edit_window_bg
 
     edit_title = tk.Label(edit_window, text='Upravit údaje pacienta', font='Arial 16 bold', background='light blue')
     edit_title.grid(row=0, column=0, columnspan=3, ipadx=20, ipady=10)
@@ -163,7 +174,7 @@ def edit():    # edit patient's data
 
     id_edit = tk.Label(edit_window, text='rodné číslo nelze upravit', font='Arial 11', background='light blue')
     id_edit.grid(row=1, column=0)
-
+    
     surname_edit = tk.Label(edit_window, text='příjmení', font='Arial 11', background='light blue')
     surname_edit.grid(row=2, column=0, pady=2)
     fill_surname_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
@@ -293,16 +304,18 @@ def chemo():    # create chemolist (pop up new window)
 
 
 def show_data():    # save all patients from database to excel file
-    conn = db.connect('pacienti.db')
-    with pd.ExcelWriter("vsichni_pacienti.xlsx", engine="xlsxwriter") as writer:
-        try:
-            df = pd.read_sql('SELECT * FROM pacienti ORDER BY rodne_cislo ASC', conn)
-            df.to_excel(writer, sheet_name = "pacienti", header = True, index = False)
-            path_file = Path('vsichni_pacienti.xlsx').resolve()
-            os.system(f'start excel.exe "{path_file}"')
-        except:
-            print("There is an error")
-
+    if messagebox.askyesno(title='Upozornění', message='Opravdu chceš údaje uložit do excelu a zobrazit? Seznam pacientů poté bude k dispozici v souboru pod názvem "vsichni_pacienti.xlsx".') == True:
+        conn = db.connect('pacienti.db')
+        with pd.ExcelWriter("vsichni_pacienti.xlsx", engine="xlsxwriter") as writer:
+            try:
+                df = pd.read_sql('SELECT * FROM pacienti ORDER BY rodne_cislo ASC', conn)
+                df.to_excel(writer, sheet_name = "pacienti", header = True, index = False)
+                path_file = Path('vsichni_pacienti.xlsx').resolve()
+                os.system(f'start excel.exe "{path_file}"')
+            except:
+                print("There is an error")
+        conn.commit()
+        conn.close()
 
 # labels and entries in main window
 id = tk.Label(add_frame, text='rodné číslo', font='Arial 11', background='light blue')
