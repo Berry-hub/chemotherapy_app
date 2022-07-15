@@ -1,4 +1,3 @@
-from msilib.schema import Icon
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3 as db
@@ -49,14 +48,17 @@ add_frame.grid(row=1, column=0, columnspan=3, padx=5, sticky='ew')
 
 
 # FUNCTIONS
-def add():    # add patient to the database     # nutno poriesit NOT NULL entry!!!
+def add():    # add patient to the database
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
-    try:
-        cur.execute('INSERT INTO pacienti (rodne_cislo, prijmeni, jmeno, pojistovna, adresa, diagnoza, vyska, vaha, port) VALUES(?,?,?,?,?,?,?,?,?)', (fill_id.get(), fill_surname.get(), fill_name.get(), fill_insurance.get(),fill_address.get(), fill_diagnosis.get(), fill_height.get(), fill_weight.get(), fill_port.get()))
-        messagebox.showinfo(title='oznameni', message='pacient uspesne pridan do databazy')
-    except db.IntegrityError:
-        messagebox.showerror(title='Upozornění', message='Pacient s uvedeným rodným číslem již je v databáze!')
+    if fill_id.get() == '':
+        messagebox.showerror(title='Upozornění', message='Prázdne pole s rodným číslem!')
+    else:
+        try:
+            cur.execute('INSERT INTO pacienti (rodne_cislo, prijmeni, jmeno, pojistovna, adresa, diagnoza, vyska, vaha, port) VALUES(?,?,?,?,?,?,?,?,?)', (fill_id.get(), fill_surname.get(), fill_name.get(), fill_insurance.get(),fill_address.get(), fill_diagnosis.get(), fill_height.get(), fill_weight.get(), fill_port.get()))
+            messagebox.showinfo(title='oznameni', message='pacient uspesne pridan do databazy')
+        except db.IntegrityError:
+            messagebox.showerror(title='Upozornění', message='Pacient s uvedeným rodným číslem již je v databáze!')
     cur.close()
     conn.commit()
     conn.close()
@@ -105,13 +107,15 @@ def find():    # look for patient in the database, result pops up in a new windo
     return id_select
 
 def delete():    # delete patient from the database
-    # nutno upravit - 'vymaze' i neexistujiciho pacienta!
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
     id_select = fill_search.get()
-    if messagebox.askyesno(title='Varování', message='Opravdu chceš vymazat pacienta z databázy?') == True:
+    cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
+    if cur.fetchone() == None:
+        messagebox.showinfo(title='Info', message='Pacient není v databaze!')
+    elif messagebox.askyesno(title='Varování', message=f'Opravdu chceš vymazat pacienta s rodnym cislem {id_select} z databázy?') == True:
         cur.execute('DELETE FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-        messagebox.showinfo(title='Info', message='Pacient vymazán!')  
+        messagebox.showinfo(title='Info', message='Pacient vymazán!')
     conn.commit()
     conn.close()
     fill_search.delete(0, 'end')
