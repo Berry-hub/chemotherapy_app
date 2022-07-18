@@ -29,7 +29,7 @@ cur.close()
 conn.commit()
 conn.close()
 
-# create tkinter window
+# create main tkinter window
 window = tk.Tk()
 window.title('Pacienti + chemoterapie')
 window.geometry('420x725')
@@ -46,6 +46,17 @@ title.grid(row=0, column=0, columnspan=3, ipadx=20, ipady=10)
 add_frame = tk.LabelFrame(window, text='údaje pacienta', labelanchor='n', background='light blue')
 add_frame.grid(row=1, column=0, columnspan=3, padx=5, sticky='ew')
 
+
+def grab_data():
+    conn = db.connect('pacienti.db')
+    cur = conn.cursor()
+    id_select = str(fill_search.get())
+    cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
+    patient = cur.fetchone()
+    cur.close()
+    conn.commit()
+    conn.close()
+    return patient
 
 # FUNCTIONS
 def add():    # add patient to the database
@@ -73,51 +84,37 @@ def add():    # add patient to the database
     fill_port.delete(0, 'end')
 
 def find():    # look for patient in the database, result pops up in a new window
-    find_window = tk.Toplevel()
-    find_window.title('pacient')
-    find_window.geometry('420x710')
-    find_window.config(background='light blue')
-
-    conn = db.connect('pacienti.db')
-    cur = conn.cursor()
-    id_select = str(fill_search.get())
-    cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-    record = cur.fetchone()
+    patient = grab_data()
     note_list = ['rodné číslo', 'příjmení', 'jméno', 'pojišťovna', 'adresa', 'diagnóza', 'výška', 'váha', 'port']
-    if record is None:
+    if patient is None:
         messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')  
-        find_window.destroy()
     else:
+        find_window = tk.Toplevel()
+        find_window.title('pacient')
+        find_window.geometry('420x710')
+        find_window.config(background='light blue')
+        find_window_bg = tk.PhotoImage(file="find_window_img.png")
+        find_window_label = tk.Label(find_window, image=find_window_bg)
+        find_window_label.grid(row=11, column=0, columnspan=3, pady=5)
+        find_window_label.image = find_window_bg
+
         for index,item in enumerate(note_list):
             note_label = tk.Label(find_window, width=8, text=item, anchor='w', font='Arial 11', background='light blue')
             note_label.grid(row=index, column=0)
         for i in range(len(note_list)):
             border_label = tk.Label(find_window, width=3, text='>>>', anchor='e', font='Courier 8', background='light blue')
             border_label.grid(row=i, column=1)
-        for index, rec in enumerate(record):
+        for index, rec in enumerate(patient):
             find_label = tk.Label(find_window, width=36, text=rec, anchor='w', font='Arial 11', background='light blue')
             find_label.grid(row=index, column=2)
-        find_window_bg = tk.PhotoImage(file="find_window_img.png")
-        find_window_label = tk.Label(find_window, image=find_window_bg)
-        find_window_label.grid(row=11, column=0, columnspan=3, pady=5)
-        find_window_label.image = find_window_bg
-
-    conn.commit()
-    conn.close()
-    return id_select
 
 def delete():    # delete patient from the database
-    conn = db.connect('pacienti.db')
-    cur = conn.cursor()
-    id_select = fill_search.get()
-    cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-    if cur.fetchone() == None:
+    patient = grab_data()
+    if patient == None:
         messagebox.showinfo(title='Info', message='Pacient není v databaze!')
-    elif messagebox.askyesno(title='Varování', message=f'Opravdu chceš vymazat pacienta s rodnym cislem {id_select} z databázy?') == True:
-        cur.execute('DELETE FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
+    elif messagebox.askyesno(title='Varování', message=f'Opravdu chceš vymazat pacienta s rodnym cislem {fill_id.get()} z databázy?') == True:
+        cur.execute('DELETE FROM pacienti WHERE rodne_cislo = ?', ([fill_id.get()]))
         messagebox.showinfo(title='Info', message='Pacient vymazán!')
-    conn.commit()
-    conn.close()
     fill_search.delete(0, 'end')
 
 def save():    # confirm data update and save to the database
@@ -153,94 +150,89 @@ def save():    # confirm data update and save to the database
     edit_window.destroy()
 
 def edit():    # edit patient's data
-    global edit_window
-    edit_window = tk.Toplevel()
-    edit_window.title('Upravit údaje pacienta')
-    edit_window.geometry('390x680')
-    edit_window.config(background='light blue')
+    patient = grab_data()
 
-    edit_window_bg = tk.PhotoImage(file="edit_window_img.png")
-    edit_window_label = tk.Label(edit_window, image=edit_window_bg)
-    edit_window_label.grid(row=11, column=0, columnspan=2, pady=5, padx=30)
-    edit_window_label.image = edit_window_bg
-
-    edit_title = tk.Label(edit_window, text='Upravit údaje pacienta', font='Arial 16 bold', background='light blue')
-    edit_title.grid(row=0, column=0, columnspan=3, ipadx=20, ipady=10)
-
-    global fill_surname_edit
-    global fill_name_edit
-    global fill_insurance_edit
-    global fill_address_edit
-    global fill_diagnosis_edit
-    global fill_height_edit
-    global fill_weight_edit
-    global fill_port_edit
-
-    id_edit = tk.Label(edit_window, text='rodné číslo nelze upravit', font='Arial 11', background='light blue')
-    id_edit.grid(row=1, column=0)
-    
-    surname_edit = tk.Label(edit_window, text='příjmení', font='Arial 11', background='light blue')
-    surname_edit.grid(row=2, column=0, pady=2)
-    fill_surname_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_surname_edit.grid(row=2, column=1)
-
-    name_edit = tk.Label(edit_window, text='jméno', font='Arial 11', background='light blue')
-    name_edit.grid(row=3, column=0, pady=2)
-    fill_name_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_name_edit.grid(row=3, column=1)
-
-    insurance_edit = tk.Label(edit_window, text='pojišťovna', font='Arial 11', background='light blue')
-    insurance_edit.grid(row=4, column=0, pady=2)
-    fill_insurance_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_insurance_edit.grid(row=4, column=1)
- 
-    address_edit = tk.Label(edit_window, text='adresa', font='Arial 11', background='light blue')
-    address_edit.grid(row=5, column=0, pady=2)
-    fill_address_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_address_edit.grid(row=5, column=1)
-
-    diagnosis_edit = tk.Label(edit_window, text='diagnóza', font='Arial 11', background='light blue')
-    diagnosis_edit.grid(row=6, column=0, pady=2)
-    fill_diagnosis_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_diagnosis_edit.grid(row=6, column=1)
-
-    height_edit = tk.Label(edit_window, text='výška', font='Arial 11', background='light blue')
-    height_edit.grid(row=7, column=0, pady=2)
-    fill_height_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_height_edit.grid(row=7, column=1)
-
-    weight_edit = tk.Label(edit_window, text='váha', font='Arial 11', background='light blue')
-    weight_edit.grid(row=8, column=0, pady=2)
-    fill_weight_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_weight_edit.grid(row=8, column=1)
-
-    port_edit = tk.Label(edit_window, text='port', font='Arial 11', background='light blue')
-    port_edit.grid(row=9, column=0, pady=2)
-    fill_port_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
-    fill_port_edit.grid(row=9, column=1)
-
-    save_btn = tk.Button(edit_window, width=12, text='uložit změny', font='Arial 11', fg='red', command=save)
-    save_btn.grid(row=10, column=1, padx=5, pady=10)
-
-    conn = db.connect('pacienti.db')
-    cur = conn.cursor()
-    id_select = fill_search.get()
-    cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-    record = cur.fetchone()
-    if record is None:
+    if patient is None:
         messagebox.showinfo(title='Upozornění', message='Pacient s uvedeným rodným číslem není v databáze!')
-        edit_window.destroy()
     else:
-        fill_surname_edit.insert(0, record[1])
-        fill_name_edit.insert(0, record[2])
-        fill_insurance_edit.insert(0, record[3])
-        fill_address_edit.insert(0, record[4])
-        fill_diagnosis_edit.insert(0, record[5])
-        fill_height_edit.insert(0, record[6])
-        fill_weight_edit.insert(0, record[7])
-        fill_port_edit.insert(0, record[8])
-    conn.commit()
-    conn.close()   
+        global edit_window
+        edit_window = tk.Toplevel()
+        edit_window.title('Upravit údaje pacienta')
+        edit_window.geometry('390x680')
+        edit_window.config(background='light blue')
+
+        edit_window_bg = tk.PhotoImage(file="edit_window_img.png")
+        edit_window_label = tk.Label(edit_window, image=edit_window_bg)
+        edit_window_label.grid(row=11, column=0, columnspan=2, pady=5, padx=30)
+        edit_window_label.image = edit_window_bg
+
+        edit_title = tk.Label(edit_window, text='Upravit údaje pacienta', font='Arial 16 bold', background='light blue')
+        edit_title.grid(row=0, column=0, columnspan=3, ipadx=20, ipady=10)
+
+        global fill_surname_edit
+        global fill_name_edit
+        global fill_insurance_edit
+        global fill_address_edit
+        global fill_diagnosis_edit
+        global fill_height_edit
+        global fill_weight_edit
+        global fill_port_edit
+
+        id_edit = tk.Label(edit_window, text='rodné číslo nelze upravit', font='Arial 11', background='light blue')
+        id_edit.grid(row=1, column=0)
+        
+        surname_edit = tk.Label(edit_window, text='příjmení', font='Arial 11', background='light blue')
+        surname_edit.grid(row=2, column=0, pady=2)
+        fill_surname_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_surname_edit.grid(row=2, column=1)
+
+        name_edit = tk.Label(edit_window, text='jméno', font='Arial 11', background='light blue')
+        name_edit.grid(row=3, column=0, pady=2)
+        fill_name_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_name_edit.grid(row=3, column=1)
+
+        insurance_edit = tk.Label(edit_window, text='pojišťovna', font='Arial 11', background='light blue')
+        insurance_edit.grid(row=4, column=0, pady=2)
+        fill_insurance_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_insurance_edit.grid(row=4, column=1)
+    
+        address_edit = tk.Label(edit_window, text='adresa', font='Arial 11', background='light blue')
+        address_edit.grid(row=5, column=0, pady=2)
+        fill_address_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_address_edit.grid(row=5, column=1)
+
+        diagnosis_edit = tk.Label(edit_window, text='diagnóza', font='Arial 11', background='light blue')
+        diagnosis_edit.grid(row=6, column=0, pady=2)
+        fill_diagnosis_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_diagnosis_edit.grid(row=6, column=1)
+
+        height_edit = tk.Label(edit_window, text='výška', font='Arial 11', background='light blue')
+        height_edit.grid(row=7, column=0, pady=2)
+        fill_height_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_height_edit.grid(row=7, column=1)
+
+        weight_edit = tk.Label(edit_window, text='váha', font='Arial 11', background='light blue')
+        weight_edit.grid(row=8, column=0, pady=2)
+        fill_weight_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_weight_edit.grid(row=8, column=1)
+
+        port_edit = tk.Label(edit_window, text='port', font='Arial 11', background='light blue')
+        port_edit.grid(row=9, column=0, pady=2)
+        fill_port_edit = tk.Entry(edit_window, width=20, font='Arial 11', background='light grey')
+        fill_port_edit.grid(row=9, column=1)
+
+        save_btn = tk.Button(edit_window, width=12, text='uložit změny', font='Arial 11', fg='red', command=save)
+        save_btn.grid(row=10, column=1, padx=5, pady=10)
+
+        fill_surname_edit.insert(0, patient[1])
+        fill_name_edit.insert(0, patient[2])
+        fill_insurance_edit.insert(0, patient[3])
+        fill_address_edit.insert(0, patient[4])
+        fill_diagnosis_edit.insert(0, patient[5])
+        fill_height_edit.insert(0, patient[6])
+        fill_weight_edit.insert(0, patient[7])
+        fill_port_edit.insert(0, patient[8])
+ 
 
 def chemo():    # create chemolist (pop up new window)
     chemo_window = tk.Tk()
@@ -251,28 +243,24 @@ def chemo():    # create chemolist (pop up new window)
     var = tk.StringVar(chemo_window)
 
     def chosen_treatment():    # choose treatment and create notebook
-        conn = db.connect('pacienti.db')
-        cur = conn.cursor()
-        id_select = fill_search.get()
-        cur.execute('SELECT * FROM pacienti WHERE rodne_cislo = ?', ([id_select]))
-        record = cur.fetchone()
+        patient = grab_data()
         treatment = var.get()
         try: 
             wb = openpyxl.load_workbook('chemolisty.xlsx')
             ws = wb[treatment]
-            ws['A1'].value = record[1]    # update cell values with database data
-            ws['A2'].value = record[2]
-            ws['A3'].value = record[0]
-            ws['A4'].value = record[3]
-            ws['A5'].value = record[4]
-            ws['A7'].value = record[5]
-            ws['C2'].value = record[6]
-            ws['D2'].value = record[7]
-            if record[8] == 'ano':
+            ws['A1'].value = patient[1]    # update cell values with database data
+            ws['A2'].value = patient[2]
+            ws['A3'].value = patient[0]
+            ws['A4'].value = patient[3]
+            ws['A5'].value = patient[4]
+            ws['A7'].value = patient[5]
+            ws['C2'].value = patient[6]
+            ws['D2'].value = patient[7]
+            if patient[8] == 'ano':
                 ws['G6'].value = 'PORT'
-            if record[8] == 'ne':
+            if patient[8] == 'ne':
                 ws['G6'].value = ''
-            chemo_file = f'{record[1]}_{record[2]}_{treatment.upper()}.xlsx'
+            chemo_file = f'{patient[1]}_{patient[2]}_{treatment.upper()}.xlsx'
 
             # focus on the working sheet
             for sheet in range(len(wb.sheetnames)):    
@@ -290,8 +278,6 @@ def chemo():    # create chemolist (pop up new window)
         except TypeError:
                 messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
                 chemo_window.destroy()
-        conn.commit()
-        conn.close()   
 
     # dictionary with chemo buttons (will add more - depends on demand)
     btn_dict = {
