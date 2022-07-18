@@ -51,8 +51,8 @@ add_frame.grid(row=1, column=0, columnspan=3, padx=5, sticky='ew')
 def add():    # add patient to the database
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
-    if fill_id.get() == '':
-        messagebox.showerror(title='Upozornění', message='Prázdne pole s rodným číslem!')
+    if fill_id.get().isnumeric() != True or not 9 <= len(fill_id.get()) <= 10:
+        messagebox.showerror(title='Upozornění', message='Nesprávny formát rodného čísla!')
     else:
         try:
             cur.execute('INSERT INTO pacienti (rodne_cislo, prijmeni, jmeno, pojistovna, adresa, diagnoza, vyska, vaha, port) VALUES(?,?,?,?,?,?,?,?,?)', (fill_id.get(), fill_surname.get(), fill_name.get(), fill_insurance.get(),fill_address.get(), fill_diagnosis.get(), fill_height.get(), fill_weight.get(), fill_port.get()))
@@ -222,7 +222,6 @@ def edit():    # edit patient's data
     save_btn = tk.Button(edit_window, width=12, text='uložit změny', font='Arial 11', fg='red', command=save)
     save_btn.grid(row=10, column=1, padx=5, pady=10)
 
-
     conn = db.connect('pacienti.db')
     cur = conn.cursor()
     id_select = fill_search.get()
@@ -275,7 +274,8 @@ def chemo():    # create chemolist (pop up new window)
                 ws['G6'].value = ''
             chemo_file = f'{record[1]}_{record[2]}_{treatment.upper()}.xlsx'
 
-            for sheet in range(len(wb.sheetnames)):    # focus on the working sheet
+            # focus on the working sheet
+            for sheet in range(len(wb.sheetnames)):    
                 if wb.sheetnames[sheet] == treatment:
                     break
             wb.active = sheet
@@ -284,7 +284,8 @@ def chemo():    # create chemolist (pop up new window)
             messagebox.showinfo(title='Info', message=f'Chemolist úspěšně vytvořen, uložen pod názvem {chemo_file}')
             if messagebox.askyesno(title='Dotaz', message=f'Chceš chemolist otevřít?') == True:
                 path_file = Path(chemo_file).resolve()
-                os.system(f'start excel.exe "{path_file}"')    # open excel file
+                os.system(f'start excel.exe "{path_file}"')    
+                # open excel file
             chemo_window.destroy()
         except TypeError:
                 messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
@@ -292,7 +293,7 @@ def chemo():    # create chemolist (pop up new window)
         conn.commit()
         conn.close()   
 
-    # dictionary with chemo buttons
+    # dictionary with chemo buttons (will add more - depends on demand)
     btn_dict = {
         'folfox': 'FOLFOX',
         'fufa': 'FUFA',
