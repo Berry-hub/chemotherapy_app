@@ -234,21 +234,34 @@ def edit():    # edit patient's data
         fill_port_edit.insert(0, patient[8])
  
 
-def chemo():    # create chemolist (pop up new window)
-    chemo_window = tk.Tk()
-    chemo_window.title('chemolisty')
-    chemo_window.geometry('420x680')
-    chemo_window.config(background='light blue')
+def chemo():
+    patient = grab_data()
+    if patient == None:
+        messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat správne rodné číslo!')
+    else:    # create chemolist (pop up new window)
+        chemo_window = tk.Tk()
+        chemo_window.title('chemolisty')
+        chemo_window.geometry('420x680')
+        chemo_window.config(background='light blue')  
+        var = tk.StringVar(chemo_window)
 
-    var = tk.StringVar(chemo_window)
+        tk.Label(chemo_window,text='Vyber požadovaný režim chemoterapie', font='Arial 16 bold', background='light blue').grid(row=0, column=0, columnspan=3, padx=10)
 
-    def chosen_treatment():    # choose treatment and create notebook
-        patient = grab_data()
-        treatment = var.get()
-        try: 
+        # dictionary with chemo buttons (will add more - depends on demand and current situation on the clinic ... also need to upgrade excel file with regimens)
+        btn_dict = {
+                'folfox': 'FOLFOX',
+                'fufa': 'FUFA',
+                'flot': 'FLOT',
+                'carbopt': 'CARBOPLATINA',
+                'docetaxel': 'DOCETAXEL'
+            }
+
+        def chosen_treatment():    # choose treatment and create notebook
+            treatment = var.get()
+
             wb = openpyxl.load_workbook('chemolisty.xlsx')
             ws = wb[treatment]
-            ws['A1'].value = patient[1]    # update cell values with database data
+            ws['A1'].value = patient[1]    # update cell values
             ws['A2'].value = patient[2]
             ws['A3'].value = patient[0]
             ws['A4'].value = patient[3]
@@ -275,24 +288,9 @@ def chemo():    # create chemolist (pop up new window)
                 os.system(f'start excel.exe "{path_file}"')    
                 # open excel file
             chemo_window.destroy()
-        except TypeError:
-                messagebox.showinfo(title='Upozornění', message='Pro vytvoření chemolistu musíš zadat rodné číslo!')
-                chemo_window.destroy()
 
-    # dictionary with chemo buttons (will add more - depends on demand)
-    btn_dict = {
-        'folfox': 'FOLFOX',
-        'fufa': 'FUFA',
-        'flot': 'FLOT',
-        'carbopt': 'CARBOPLATINA',
-        'docetaxel': 'DOCETAXEL'
-    }
-
-    for choice, text in btn_dict.items():
-        tk.Radiobutton(chemo_window, text=text, variable=var, value=choice, command=chosen_treatment, width=20, background='light yellow', indicator=0).grid(row=list(btn_dict.keys()).index(choice)+1, column=0, padx=10, pady=10, sticky='w')
-
-    tk.Label(chemo_window,text='Vyber požadovaný režim chemoterapie', font='Arial 16 bold', background='light blue').grid(row=0, column=0, columnspan=3, padx=10)
-
+        for choice, text in btn_dict.items(): # show chemo buttons
+            tk.Radiobutton(chemo_window, text=text, variable=var, value=choice, command=chosen_treatment, width=20, background='light yellow', indicator=0).grid(row=list(btn_dict.keys()).index(choice)+1, column=0, padx=10, pady=10, sticky='w')
 
 def show_data():    # save all patients from database to excel file
     if messagebox.askyesno(title='Upozornění', message='Opravdu chceš údaje uložit do excelu a zobrazit? Seznam pacientů poté bude k dispozici v souboru pod názvem "vsichni_pacienti.xlsx".') == True:
